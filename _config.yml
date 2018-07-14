@@ -4,7 +4,7 @@ SEOTitle: 展飞的博客 | Mr.Zhan's Blog
 header-img: img/a.jpg
 email: 949511192@qq.com
 description: "Aimez et pensez librement,Le reste regarde Dieu."
-keyword: "ZF, Mr.Zhan's Blog, 展飞的博客, zhanfei019, 邱柏荧, iOS, Apple, iPhone"
+keyword: "ZF, Mr.Zhan's Blog, 展飞的博客, zhanfei019, 展飞, Machine Learning, UIBE, Statistics"
 url: "http://zhanfei019.github.io"          # your host, for absolute URL
 baseurl: ""      # for example, '/blog' if your blog hosted on 'host/blog'
 github_repo: "https://github.com/zhanfei019/zhanfei019.github.io.git" # you code repository
@@ -99,16 +99,16 @@ service-worker: true
 # Friends
 friends: [
     {
-        title: "WY",
-        href: "http://zhengwuyang.com"
+        title: "ZH",
+        href: "http://plushunter.github.io"
     },{
         title: "简书·BY",
         href: "http://www.jianshu.com/u/e71990ada2fd"
     },{
-        title: "Apple",
-        href: "https://apple.com"
+        title: "COURSERA",
+        href: "https://www.coursera.com"
     },{
-        title: "Apple Developer",
-        href: "https://developer.apple.com/"
+        title: "GitHub",
+        href: "https://www.github.com/"
     }
 ]

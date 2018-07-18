@@ -1,0 +1,108 @@
+---
+layout:     post
+title:      MySQL Database
+subtitle:   SQL学习笔记（4）
+date:       2018-07-18
+author:     ZF
+header-img: img/sql.jpg
+catalog: true
+tags:
+    - MySQL
+    - Relational Database
+    - Big Data
+--- 
+
+前言：此代码在Jupyter Notebook中运行，如在shell中运行去掉"%sql"
+
+#### 一、准备工作
+
+##### 1.1 加载sql模块
+
+      $ %load_ext sql
+
+##### 1.2 连接数据库
+
+      $ %sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+
+##### 1.3 设置dognitiondb为默认数据库
+
+      $ %sql USE dognitiondb 
+      
+#### 二、基本查询进阶
+
+##### 2.1 查询时更改列、表的名称
+
+      $ %%sql
+        SELECT dog_guid,created_at AS “time stamp”   #名称中有空格应加引号
+        FROM complete_tests AS tests
+
+##### 2.2 查询某一列包含有多少不同值
+
+      $ %%sql
+        SELECT DISTINCT breed
+        FROM dogs;
+
+      $ SELECT DISTINCT state, city
+        FROM users;                                  ##查询两个属性有多少种不同的组合
+
+##### 2.3 查询时按照顺序输出结果
+
+      $ %%sql
+        SELECT DISTINCT breed
+        FROM dogs
+        ORDER BY breed;
+
+        SELECT DISTINCT user_guid,state,membership_type
+        FROM users
+        WHERE country=“US”
+        ORDER BY state ASC,membership_type ASC;              ##查询满足country值为US，userID，state，membership_type的不同组合，按照state升序为第一顺序，membership_type升序为第二顺序输出
+
+        SELECT DISTINCT user_guid,state,membership_type
+        FROM users
+        WHERE country="US" AND state IS NOT NULL AND membership_type IS NOT NULL
+        ORDER BY membership_type DESC,state ASC LIMIT 50;
+
+##### 2.4 在jupyter上输出结果
+
+      $ variable_name_of_your_choice = %sql [your full query goes here];       ##将sql查询结果定义为一个变量
+        the_output_name_you_want.csv('the_output_name_you_want.csv')       ##将该变量形成CSV文件
+
+##### 2.5 将breed列开头的‘-’去掉
+
+      $ %%sql
+        SELECT DISTINCT breed,TRIM(LEADING '-' FROM breed) AS breed_fixed
+        FROM dogs
+        ORDER BY breed_fixed
+
+##### 2.6 查询表中某一列或者所有列的行数
+
+      $ %sql select count(breed) from dogs;
+        %sql select count(distinct dog_guid) from complete_tests;
+        %sql select count(exclude) from dogs;
+
+##### 2.7 查询某一列空值总数
+
+      $ %sql select sum(isnull(exlude)) from dogs;
+
+##### 2.8 MAX，AVG，MIN,TIMESTAMPSIFF函数
+
+      $ %%sql
+       select avg(rating) as avg_rating,min(rating) as min_rating,max(rating) as max_rating
+       from reviews
+       where test_name='Memory versus Pointing';
+
+       %%sql
+       select count(timestampdiff(minute,start_time,end_time)) as Duration
+       from exam_answers
+       where timestampdiff(minute,start_time,end_time)<0
+
+       %%sql
+       select avg(timestampdiff(minute,start_time,end_time)) as AvgDuration
+       from exam_answers
+       where timestampdiff(minute,start_time,end_time)>0
+       
+       
+       
+       
+
+本文为原创文章，转载请保留作者署名，谢谢。

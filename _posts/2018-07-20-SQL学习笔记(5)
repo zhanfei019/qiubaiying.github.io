@@ -1,0 +1,189 @@
+---
+layout:     post
+title:      MySQL Database
+subtitle:   SQL学习笔记（5）
+date:       2018-07-20
+author:     ZF
+header-img: img/sql.jpg
+catalog: true
+tags:
+    - MySQL
+    - Relational Database
+    - Big Data
+--- 
+
+前言：此代码在Jupyter Notebook中运行，如在shell中运行去掉"%sql"
+
+#### 一、准备工作
+
+##### 1.1 加载sql模块
+
+      $ %load_ext sql
+
+##### 1.2 连接数据库
+
+      $ %sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+
+##### 1.3 设置dognitiondb为默认数据库
+
+      $ %sql USE dognitiondb 
+      
+#### 二、高级查询方法
+
+##### 2.1 分组总结函数 GROUP BY
+
+$ %%sql
+  SELECT test_name,AVG(rating) AS avg_rating
+  FROM reviews
+  GROUP BY test_name;
+
+##### 2.2 HAVING语句
+
+$ %%sql
+  SELECT state, zip,COUNT(DISTINCT user_guid) AS Num_Guid
+  FROM users
+  WHERE country=‘US’
+  GROUP BY state, zip
+  HAVING COUNT(DISTINCT user_guid)>5
+  ORDER BY state ASC,Num_Guid DESC;         ##HAVING后可以加聚合语句，用于分组条件，WHERE后不可以加聚合语句
+
+####Every non-aggregated field that is listed in the SELECT list must be listed in the GROUP BY list
+
+##### 2.3 用JOIN语句内连接两个表
+$ %%sql
+  SELECT d.dog_guid AS DogID, d.user_guid AS UserID, AVG(r.rating) AS AvgRating, COUNT(r.rating) AS NumRatings, d.breed, d.breed_group, d.breed_type
+  FROM dogs d, reviews r
+  WHERE d.dog_guid=r.dog_guid AND d.user_guid=r.user_guid
+  GROUP BY UserID, DogID, d.breed, d.breed_group, d.breed_type
+  HAVING NumRatings >= 10
+  ORDER BY AvgRating DESC
+  LIMIT 200;
+
+  SELECT d.dog_guid AS DogID, d.user_guid AS UserID, AVG(r.rating) AS AvgRating, COUNT(r.rating) AS NumRatings, d.breed, d.breed_group, d.breed_type
+  FROM dogs d JOIN reviews r ON d.dog_guid=r.dog_guid AND d.user_guid=r.user_guid    ##内连接的传统写法
+  GROUP BY d.user_guid
+  HAVING NumRatings > 9
+  ORDER BY AvgRating DESC
+  LIMIT 200;
+
+  %%sql
+  SELECT d.dog_guid AS DogID, d.user_guid AS UserID, AVG(r.rating) AS AvgRating, COUNT(r.rating) AS NumRatings, d.breed, d.breed_group, d.breed_type
+  FROM dogs d, reviews r
+  WHERE d.dog_guid=r.dog_guid AND d.user_guid=r.user_guid
+  GROUP BY UserID, DogID, d.breed, d.breed_group, d.breed_type
+  ORDER BY AvgRating DESC;
+
+  %%sql
+  SELECT d.user_guid AS UserID,d.dog_guid AS DogID,d.breed,d.breed_type,d.breed_group
+  FROM dogs d JOIN complete_tests c ON d.dog_guid=c.dog_guid
+  WHERE test_name='Yawn Warm-up'
+
+  %%sql
+  SELECT r.dog_guid AS rDogID, d.dog_guid AS dDogID, r.user_guid AS rUserID, d.user_guid AS dUserID, AVG(r.rating) AS AvgRating, COUNT(r.rating) AS NumRatings, d.breed, d.breed_group, d.breed_type
+  FROM dogs d RIGHT JOIN reviews r ON d.dog_guid=r.dog_guid AND d.user_guid=r.user_guid
+  WHERE r.dog_guid IS NOT NULL
+  GROUP BY r.dog_guid
+  HAVING NumRatings >= 10
+  ORDER BY AvgRating DESC;
+
+  %%sql
+  SELECT d.dog_guid AS dDogID,c.dog_guid AS cDogID,d.user_guid AS dUserID,c.user_guid AS cUerID,COUNT(test_name) AS NumTests
+  FROM dogs d LEFT JOIN complete_tests c ON d.dog_guid=c.dog_guid
+  GROUP BY d.dog_guid;
+
+  %%sql
+  SELECT u.user_guid AS uUserID, d.user_guid AS dUserID, d.dog_guid AS dDogID,d.breed, COUNT(*) AS numrows 
+  FROM users u LEFT JOIN dogs d ON u.user_guid=d.user_guid 
+  GROUP BY u.user_guid 
+  ORDER BY numrows DESC;
+
+##### 2.5 子查询嵌套
+$ %%sql
+  SELECT * 
+  FROM exam_answers
+  WHERE TIMESTAMPDIFF(minute,start_time,end_time)>(SELECT AVG(TIMESTAMPDIFF(minute,start_time,end_time)) AS AvgDuration
+  FROM exam_answers
+  WHERE test_name='Yawn Warm-Up' AND TIMESTAMPDIFF(minute,start_time,end_time)>0);
+
+  %%sql
+  SELECT COUNT(DISTINCT dog_guid)
+  FROM dogs
+  WHERE breed_group NOT IN ('Working','Sporting','Herding');
+
+  SELECT DISTINCT u.user_guid AS uUserID
+  FROM users u
+  WHERE EXISTS (SELECT *FROM dogs d WHERE u.user_guid =d.user_guid);
+
+  %%sql
+  SELECT  u.user_guid
+  FROM users u
+  WHERE NOT EXISTS (SELECT * FROM dogs d WHERE u.user_guid=d.user_guid)  ##选出users中存在但dogs中不存在的所有user_guid
+
+  %%sql
+  SELECT DistinctUUsersID.user_guid AS uUserID, d.user_guid AS dUserID, count(*) AS numrows
+  FROM (SELECT DISTINCT u.user_guid FROM users u) AS DistinctUUsersID   ##必须给derived table 起一个临时名字          
+  LEFT JOIN dogs d ON DistinctUUsersID.user_guid=d.user_guid
+  GROUP BY DistinctUUsersID.user_guid
+  ORDER BY numrows DESC;
+
+  %%sql
+  SELECT d.user_guid
+  FROM dogs d
+  WHERE NOT EXISTS(SELECT * FROM users u WHERE u.user_guid=d.user_guid);
+
+##### 2.6 IF语句
+$ %%sql
+  SELECT cleaned_users.user_guid AS UserID,IF(cleaned_users.first_account<'2014-06-01','early_user','late_user') AS user_type
+  FROM (SELECT user_guid, MIN(created_at) AS first_account FROM users GROUP BY user_guid) AS cleaned_users
+
+  %%sql
+  SELECT IF(a.country='US','In US','Out of US') AS UserLocation,COUNT(a.user_guid) AS numguids
+  FROM (SELECT distinct user_guid,country FROM users WHERE user_guid IS NOT NULL and country IS NOT NULL) AS a
+ GROUP BY UserLocation;
+
+##### 2.7 IF语句的嵌套
+$ %%sql
+  SELECT IF(cleaned_users.country='US','In US', IF(cleaned_users.country='N/A','Not Applicable','Outside US')) AS US_user, COUNT(cleaned_users.user_guid)   
+  FROM (SELECT DISTINCT user_guid, country FROM users WHERE country IS NOT NULL) AS cleaned_users
+  GROUP BY US_user;
+
+##### 2.8 CASE语句
+There are a couple of things to know about CASE expressions:
+* Make sure to include the word END at the end of the expression
+* CASE expressions do not require parentheses
+* ELSE expressions are optional
+* If an ELSE expression is omitted, NULL values will be outputted for all rows that do not meet any of the conditions stated explicitly in the expression
+* CASE expressions can be used anywhere in a SQL statement, including in GROUP BY, HAVING, and ORDER BY clauses or the SELECT column list.
+ $ %%sql
+   SELECT CASE WHEN cleaned_users.country="US" THEN "In US"
+                         WHEN cleaned_users.country="N/A" THEN "Not Applicable"
+                         ELSE "Outside US"
+                         END AS US_user, 
+      count(cleaned_users.user_guid)   
+   FROM (SELECT DISTINCT user_guid, country 
+      FROM users
+      WHERE country IS NOT NULL) AS cleaned_users
+   GROUP BY US_user
+
+上例等价于
+%%sql
+SELECT CASE cleaned_users.country
+            WHEN "US" THEN "In US"
+            WHEN "N/A" THEN "Not Applicable"
+            ELSE "Outside US"
+            END AS US_user, 
+      count(cleaned_users.user_guid)   
+FROM (SELECT DISTINCT user_guid, country 
+      FROM users
+      WHERE country IS NOT NULL) AS cleaned_users
+GROUP BY US_user
+
+%%sql
+SELECT dog_guid,dog_fixed,
+    CASE dog_fixed
+      WHEN '1' THEN 'neutered'
+        WHEN '0' THEN 'not neutered'
+    END AS neutered
+FROM dogs LIMIT 200
+
+逻辑语句的执行顺序 1.NOT 2.AND 3.OR
